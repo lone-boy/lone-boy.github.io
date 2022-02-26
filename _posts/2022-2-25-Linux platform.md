@@ -41,3 +41,105 @@ typora-root-url: ..
 
 ## platform平台驱动模型简介
 
+上面讲了设备驱动的分离，并且引出了总线（bus）、驱动（driver）和设备（device）模型，比如I2C、SPI、USB等总线。但是在SOC中有些外设是没有总线这个概念的，但是又要使用总线、驱动和设备模型该怎么办？为了解决问题，Linux提出了platform这个虚拟总线，相应的就有platform_driver和platform_device。
+
+### platform总线
+
+Linux系统内核使用bus_type结构体表示总线，此结构体定义在文件inlcude/linux/device.h，bus_type结构体内容如下：
+
+```c
+struct bus_type {					/* 设备的总线内型 */
+	const char		*name;		/* 总线的名字 */
+	const char		*dev_name; /* 用于子系统枚举设备 (dev->id) */
+	struct device		*dev_root;/* 用作父设备的默认设备 */
+	const struct attribute_group **bus_groups;/* 总线的默认属性 */
+	const struct attribute_group **dev_groups;/* 总线上设备的默认属性 */
+	const struct attribute_group **drv_groups;/* 总线上设备驱动程序的默认属性 */
+
+	int (*match)(struct device *dev, struct device_driver *drv);
+	int (*uevent)(struct device *dev, struct kobj_uevent_env *env);
+	int (*probe)(struct device *dev);
+	int (*remove)(struct device *dev);
+	void (*shutdown)(struct device *dev);
+
+	int (*online)(struct device *dev);
+	int (*offline)(struct device *dev);
+
+	int (*suspend)(struct device *dev, pm_message_t state);
+	int (*resume)(struct device *dev);
+
+	int (*num_vf)(struct device *dev);
+
+	const struct dev_pm_ops *pm;
+
+	const struct iommu_ops *iommu_ops;
+
+	struct subsys_private *p;
+	struct lock_class_key lock_key;
+};
+```
+
+第9行的match函数很重要，这个函数完成设备和驱动之间匹配的，总线就是使用match函数来根据注册的设备来查找对应的驱动，或者根据注册的驱动来查找相应的设备，因此每一条总线都必须实现此函数。match函数有两个参数：dev和drv，这两个参数分别为device和device_drivere类型，就是设备和驱动。
+
+platform总线是bus_type的一个具体实例，定义在文件drivers/base/platform.c，platform总线定义如下：
+
+```c
+struct bus_type platfor_bus_type = {
+    .name = "platform",
+    .dev_groups = platform_dev_groups,
+    .match = platform_match,
+    .uevent = platform_uevent,
+    .pm = &platform_dev_pm_ops,
+};
+```
+
+platform_bus_type就是platform平台总线，其中platform_match就是匹配函数。我们来看一下驱动和设备是如何匹配的，platform_match函数定义在文件drivers/base/platform.c中，函数内容如下：
+
+```c
+static int platform_match(struct device *dev, struct device_driver *drv)
+{
+	struct platform_device *pdev = to_platform_device(dev);
+	struct platform_driver *pdrv = to_platform_driver(drv);
+
+	/* When driver_override is set, only bind to the matching driver */
+	if (pdev->driver_override)
+		return !strcmp(pdev->driver_override, drv->name);
+
+	/* Attempt an OF style match first */
+	if (of_driver_match_device(dev, drv))
+		return 1;
+
+	/* Then try ACPI style match */
+	if (acpi_driver_match_device(dev, drv))
+		return 1;
+
+	/* Then try to match against the id table */
+	if (pdrv->id_table)
+		return platform_match_id(pdrv->id_table, pdev) != NULL;
+
+	/* fall-back to driver name match */
+	return (strcmp(pdev->name, drv->name) == 0);
+}
+```
+
+可以看出，驱动和设备的匹配方法有四种方法：
+
+第11-12行的OF类型的匹配，也就是设备树采用的匹配方式。of_driver_match_device函数定义在文件include/linux/of_device.h中，device_driver结构体（表示设备驱动）中有一个名为of_match_table的成员变量，此成员变量保存着驱动的compatible匹配表，设备树中的每个设备节点的compatible属性会和of_match_table表中的所有成员比较，查看是否有相同的条目，如果有点话就表示设备和此驱动匹配，设备和驱动匹配成功以后probe函数就会执行。
+
+第15-16行，ACPI匹配方式。
+
+第19-20行，id_table匹配，每个platform_driver结构体有一个id_table成员变量，顾名思义，保存了很多id信息，这些id信息存放着这个platform驱动所支持的驱动类型。
+
+第23行，如果第三种匹配方式的id_table不存在的话，就直接比较驱动和设备的name字段，看看是不是相等，如果相等的话就匹配成功了。
+
+对于支持设备数的Linux内核版本，一般设备驱动为了兼容性都支持设备树和无设备树两种匹配方式。也就是第一种匹配方式都会存在，第三种和第四种只要存在一种就可以，一般用的最多的还是第四种。
+
+### platform驱动
+
+platform_driver结构体表示platform驱动，此结构体定义在文件include/linux/platform_device.h中，内容如下：
+
+```c
+```
+
+
+
