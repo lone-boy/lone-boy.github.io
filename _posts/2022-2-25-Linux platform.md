@@ -332,3 +332,13 @@ static struct paltform_driver leds_platform_driver = {
 }
 ```
 
+## 总结
+
+对platform_devicce 和 platform_driver有一个全局的认识，由于现在都是基于设备树的编程，因此，我们只需要编写platform_driver，完成相应的.probe 和 .remove函数即可完成大部分的platform驱动编写。
+
+## 说明
+
+本文档参考了:
+
+正点原子的linux开发手册--领航者ZYNQ之嵌入式Linux开发指南V1.5.2
+
