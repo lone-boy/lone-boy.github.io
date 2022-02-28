@@ -295,7 +295,7 @@ pdev：要注销的platform设备。
 
 ### 设备树下的platform驱动简介
 
-platform驱动框架分为总线、设备和驱动，其中总线不需要我们这些驱动程序员去管理，这个是Linux内核提供的，我们在编写驱动的时候只要关注与设备和驱动的具体实现即可。在没有设备树的Linux内核下，我们需要==分别编写并注册platform_device和platform_driver==，分别代表设备和驱动。在使用设备树的时候，设备的描述被放到了设备树中，因此，platform_device就不需要我们去编写了，我们只需要实现platform_driver即可，当内核在解析设备树的时候会自动帮我们创建一个platform_device对象；在编写基于设备树的platform驱动的时候我们需要注意以下几点
+platform驱动框架分为总线、设备和驱动，其中总线不需要我们这些驱动程序员去管理，这个是Linux内核提供的，我们在编写驱动的时候只要关注与设备和驱动的具体实现即可。**在没有设备树的Linux内核下，我们需要分别编写并注册platform_device和platform_driver**，分别代表设备和驱动。在使用设备树的时候，设备的描述被放到了设备树中，因此，**platform_device就不需要我们去编写了，我们只需要实现platform_driver即可**，当内核在解析设备树的时候会自动帮我们创建一个platform_device对象；在编写基于设备树的platform驱动的时候我们需要注意以下几点
 
 #### 1 在设备树中创建设备节点
 
