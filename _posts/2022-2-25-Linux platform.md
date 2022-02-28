@@ -139,7 +139,196 @@ static int platform_match(struct device *dev, struct device_driver *drv)
 platform_driver结构体表示platform驱动，此结构体定义在文件include/linux/platform_device.h中，内容如下：
 
 ```c
+struct platform_driver{
+   int (*probe)(struct platform_device *);
+    int (*remove)(struct platform_device *);
+    void (*shutdown)(struct platform_device *);
+    int (*suspend)(struct platform_device *,pm_message_t state);
+    int (*resume)(struct platform_device *);
+    struct device_driver driver;
+    const struct platform_device_id *id_table;
+    bool prevent_deferred_probe;
+};
 ```
 
+probe函数：当驱动与设备匹配成功后，函数probe就会执行，非常重要的函数！一般驱动的提供者会编写，如果自己要编写一个全新的驱动，那么probe就需要自行实现。
 
+driver成员，为device_driver结构体变量，Linux内核里面大量使用到了面向对象的四类，device_driver相当于基类。提供了最基础的驱动框架。platform_driver继承了这个基类，然后在此基础上又添加了一些特有的成员变量。
+
+id_table表，也就是上一节讲解platform总线匹配驱动和设备的时候采用的第三种方法，id_table是个表（也就是数组），每个元素的类型为platform_device_id，platform_device_id结构体内容如下：
+
+```c
+struct platform_device_id{
+    char name[PLATFORM_NAME_SIZE];
+    kernel_ulong_t driver_data;
+};
+```
+
+device_driver结构体定义在include/linux/device.h，device_driver结构体内容如下：
+
+```c
+struct device_driver {
+	const char		*name;
+	struct bus_type		*bus;
+
+	struct module		*owner; db代表什么
+	const char		*mod_name;	/* used for built-in modules */
+
+	bool suppress_bind_attrs;	/* disables bind/unbind via sysfs */
+	enum probe_type probe_type;
+
+	const struct of_device_id	*of_match_table;
+	const struct acpi_device_id	*acpi_match_table;
+
+	int (*probe) (struct device *dev);
+	int (*remove) (struct device *dev);
+	void (*shutdown) (struct device *dev);
+	int (*suspend) (struct device *dev, pm_message_t state);
+	int (*resume) (struct device *dev);
+	const struct attribute_group **groups;
+
+	const struct dev_pm_ops *pm;
+
+	struct driver_private *p;
+};
+```
+
+of_match_table就是采用设备树的时候驱动使用的匹配表，同样是数组，每个匹配项都为of_device_id结构体类型，此结构体定义在文件include/linux/mod_devicetable.h中，内容如下：
+
+```c
+struct of_device_id{
+    char name[32];
+    char type[32];
+    char compatible[128];
+    const void *data;
+};
+```
+
+对于设备而言，就是通过设备节点的compatible属性值和of_match_table中每个项目的compatible成员变量进行比较，如果有相等的就表示设备和此驱动匹配成功。
+
+==在编写platform驱动的时候，首先定义一个platform_driver结构体变量，然后实现结构体中的各个成员变量，重点是实现匹配方法以及probe函数。当驱动和设备匹配成功以后，probe函数就会执行，具体的驱动程序在probe函数里面编写，比如字符设备驱动等等。==
+
+当我们定义并初始化号platform_driver结构体变量以后，需要在驱动入口函数里面调用platform_driver_register函数向Linux内核注册一个platform驱动。
+
+`int platform_driver_register(struct platform_driver *drv);`
+
+函数参数和返回值含义如下：
+
+driver:要注册的platform驱动。
+
+返回值:负数,失败；0，成功
+
+还需要在驱动卸载函数中通过platform_driver_unregister函数卸载platform驱动，platform_driver_unregister函数原型如下
+
+`void platform_driver_unregister(struct platform_driver *drv);`
+
+函数参数和返回值含义如下：
+
+drv：要卸载的platform驱动。
+
+返回值：无。
+
+### platform设备
+
+platform驱动已经写好后，我们还需要platform设备，否则的话单单一个驱动也做不了什么。platform_device这个结构体表示platform设备，这里我们要注意，如果内核支持设备树的话就不要使用platform_device来描述设备。当然，如果一定要用platform_device来描述设备信息的话也是可以，platform_device结构体定义在文件include/linux/platform_deivce.h，结构体内容如下：
+
+```c
+struct platform_device {
+	const char	*name;
+	int		id;
+	bool		id_auto;
+	struct device	dev;
+	u32		num_resources;
+	struct resource	*resource;
+
+	const struct platform_device_id	*id_entry;
+	char *driver_override; /* Driver name to force a match */
+
+	/* MFD cell pointer */
+	struct mfd_cell *mfd_cell;
+
+	/* arch specific additions */
+	struct pdev_archdata	archdata;
+};
+```
+
+第2行，name表示设备名字，要和所使用的platform驱动的name字段相同，否则的话设备就无法匹配到对应的驱动。比如对应的platform驱动的name字段为“xxx-gpio"，那么此name字段也要设置为”xxx-gpio"。
+
+num_resources表示资源数量，一般是resource资源的大小。
+
+resource表示资源，也就是设备信息，比如外设寄存器。Linux内核使用resource结构体表示资源，resource结构体内容如下：
+
+```c
+struct resource {
+	resource_size_t start;
+	resource_size_t end;
+	const char *name;
+	unsigned long flags;
+	unsigned long desc;
+	struct resource *parent, *sibling, *child;
+};
+```
+
+start和end分别表示资源的起始和终止信息，对于内存类的资源，就表示内存起始和终止地址，name表示资源名字，flags表示资源类型，可选的资源类型都定义在文件include/linux/ioport.h里面。
+
+在不支持设备树的Linux版本中，用户需要编写platform_device变量来描述设备信息，然后使用platform_device_register函数将设备信息注册到Linux内核中，此函数原型如下所示：
+
+`int platform_device_register(struct platform_device *pdev)`
+
+函数参数和返回值含义如下：
+
+pdev:要注册的platform设备。
+
+返回值:负数,失败；0，成功。
+
+如果不再使用platform的话可以通过platform_device_unregister函数注销掉相应platform设备，platform_device_unregister函数原型如下：
+
+`void platform_device_unregister(struct platform_device *pdev)`
+
+函数参数和返回值含义如下：
+
+pdev：要注销的platform设备。
+
+返回值：无。
+
+## 设备树下的platform驱动
+
+### 设备树下的platform驱动简介
+
+platform驱动框架分为总线、设备和驱动，其中总线不需要我们这些驱动程序员去管理，这个是Linux内核提供的，我们在编写驱动的时候只要关注与设备和驱动的具体实现即可。在没有设备树的Linux内核下，我们需要==分别编写并注册platform_device和platform_driver==，分别代表设备和驱动。在使用设备树的时候，设备的描述被放到了设备树中，因此，platform_device就不需要我们去编写了，我们只需要实现platform_driver即可，当内核在解析设备树的时候会自动帮我们创建一个platform_device对象；在编写基于设备树的platform驱动的时候我们需要注意以下几点
+
+#### 1 在设备树中创建设备节点
+
+首先我们需要在设备树中创建设备节点来描述设备信息，重点是要设置好compatible属性的值，因为platform总线需要通过设备节点compatible属性值来匹配驱动！这点要切记。
+
+```
+led{
+	compatible = "mizar,led";
+	status = "okay";
+	defalut-state = "on";
+	led-gpio = <& gpio0 7 GPIO_ACTIVE_HIGH>;
+};
+```
+
+#### 2 编写platform驱动的时候要注意兼容属性
+
+在使用设备树的时候，platform驱动会通过of_match_table来保存兼容性值，也就是表明此驱动兼容哪些设备。所以of_match_table将会尤为重要
+
+```c
+static const struct of_device_id leds_of_match[] = {
+    {.compatible = "mizar,led"},
+    {/*Sentinel*/}
+};
+
+MODULE_DEVICE_TABLE(of,leds_of_match);
+
+static struct paltform_driver leds_platform_driver = {
+    .driver = {
+        .name = "zynq-led",
+        .of_match_table = leds_of_match,
+    },
+    .probe = leds_probe,
+    .remove = leds_remove,
+}
+```
 
