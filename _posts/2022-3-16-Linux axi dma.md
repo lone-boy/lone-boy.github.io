@@ -2,6 +2,7 @@
 layout: post
 title: axi dma Linux使用
 data: 2022-03-16
+categories:Linux Xilinx
 typora-root-url: ..
 ---
 

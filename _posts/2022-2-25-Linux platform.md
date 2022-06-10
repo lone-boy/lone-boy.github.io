@@ -2,6 +2,7 @@
 layout: post
 title: Linux platform
 date: 2022-2-25
+categories:Linux
 typora-root-url: ..
 ---
 

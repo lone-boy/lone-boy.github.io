@@ -2,6 +2,7 @@
 layout: post
 title: CMakeLists
 data: 2022-03-05
+categories:CMakeLists
 typora-root-url: ..
 ---
 
