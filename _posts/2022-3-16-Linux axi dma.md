@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "axi dma Linux使用"
-data: 2022-03-16
+date: 2022-03-16
 description:"Linux 关于 Xilinx官方的相关东西"
 tag: Linux Xilinx
 ---
