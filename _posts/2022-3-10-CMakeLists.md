@@ -2,8 +2,8 @@
 layout: post
 title: CMakeLists
 data: 2022-03-05
-categories:CMakeLists
-typora-root-url: ..
+tag:CMakeLists
+description:CmakeLists
 ---
 
 学一学CMakeLists这个玩意吧。看uhd源码的时候意识到大型工程都是使用make命令就可以编译。而cmakelist是非常重要的一个玩意，这里我们将会将Make、Makefile、CMake和CMakeLists的作用以及之间的联系。
