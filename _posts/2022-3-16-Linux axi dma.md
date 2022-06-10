@@ -1,9 +1,9 @@
 ---
 layout: post
-title: axi dma Linux使用
+title: "axi dma Linux使用"
 data: 2022-03-16
 description:"Linux 关于 Xilinx官方的相关东西"
-tag:Linux Xilinx
+tag: Linux Xilinx
 ---
 
 公司项目，需要使用zynq读取sd卡的bin文件内容，然后通过运行在linux系统上的main.c函数将数据通过axi dma写入fpga交给fpga进行处理。因此这里就具体说明以下axi dma的用法。
