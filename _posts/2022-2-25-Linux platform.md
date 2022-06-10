@@ -1,6 +1,6 @@
 ---
 layout: post
-title: Linux platform
+title:"Linux platform"
 date: 2022-2-25
 description:"Linux驱动相关东西"
 tag:Linux
