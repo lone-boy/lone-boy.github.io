@@ -1,9 +1,9 @@
 ---
 layout: post
-title:"Linux platform"
+title: "Linux platform"
 date: 2022-2-25
-description:"Linux驱动相关东西"
-tag:Linux
+description: "Linux驱动相关东西"
+tag: Linux
 ---
 
 今天觉得关于linux platform设备驱动的整个流程还不是很清晰，因此这里开始进行一次比较全面的复盘和回顾。并在Mizar板子上运行相关实验。
