@@ -3,7 +3,8 @@ layout: post
 title: "Linux platform"
 date: 2022-2-25
 description: "Linux驱动相关东西"
-tag: Linux
+tag: Linux驱动
+typora-root-url: ..
 ---
 
 今天觉得关于linux platform设备驱动的整个流程还不是很清晰，因此这里开始进行一次比较全面的复盘和回顾。并在Mizar板子上运行相关实验。
@@ -172,7 +173,7 @@ struct device_driver {
 	const char		*name;
 	struct bus_type		*bus;
 
-	struct module		*owner; db代表什么
+	struct module		*owner; 
 	const char		*mod_name;	/* used for built-in modules */
 
 	bool suppress_bind_attrs;	/* disables bind/unbind via sysfs */
