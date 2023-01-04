@@ -112,3 +112,23 @@ typora-root-url: ..
 下图是状态寄存器对应的保护空间。
 
 ![image-7](/images/chips/image-7.png)
+
+
+
+## 关于winbond 在linux下 uid的读取
+
+寄存器0x4b是winbond芯片读取uid。
+
+在spi-nor.c文件中加入以下信息：
+
+```c
+u8 uid[20];
+	tmp = nor->read_reg(nor,0x4B,uid,20);
+	if(tmp < 0){
+		dev_dbg(nor->dev, "error %d reading UID\n", tmp);
+		return ERR_PTR(tmp);
+	}
+	dev_info(nor->dev,"SPI-NOR-UniqueID %*phN\n",16,&uid[4]);
+```
+
+加入位置为，spi_nor_read_id函数的最开始即可。
