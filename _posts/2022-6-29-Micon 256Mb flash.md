@@ -132,3 +132,31 @@ u8 uid[20];
 ```
 
 加入位置为，spi_nor_read_id函数的最开始即可。
+
+新版内核修改：
+
+```c
+u8 uid[20];
+if(nor -> spimem){
+		struct spi_mem_op op = 
+			SPI_MEM_OP(SPI_MEM_OP_CMD(0x4b,1),
+					SPI_MEM_OP_NO_ADDR,
+					SPI_MEM_OP_DUMMY(0,4),
+					SPI_MEM_OP_DATA_IN(8,uid,1)
+						);
+		tmp = spi_mem_exec_op(nor->spimem, &op);
+		if(tmp < 0){
+			dev_dbg(nor->dev, "error %d reading UID\n", tmp);
+			return ERR_PTR(tmp);
+		}
+		dev_info(nor->dev,"SPI-NOR-UniqueID %*phN\n",16,&uid[4]);
+	} else{
+		tmp = nor->read_reg(nor,0x4b,uid,20);
+		if(tmp < 0){
+			dev_dbg(nor->dev, "error %d reading UID\n", tmp);
+			return ERR_PTR(tmp);
+		}
+		dev_info(nor->dev,"SPI-NOR-UniqueID %*phN\n",16,&uid[4]);
+	}
+```
+
